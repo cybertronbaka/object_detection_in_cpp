@@ -10,6 +10,7 @@
 #include <tensorflow/lite/interpreter.h>
 #include <tensorflow/lite/kernels/register.h>
 #include <tensorflow/lite/model.h>
+#include "videothread.cpp"
 
 using namespace cv;
 using namespace std;
@@ -20,20 +21,19 @@ using namespace std;
 #define RED Scalar(0, 0, 255)
 #define LABEL_TEXT_POS Point(10, 20)
 
+void SimpleThread(VideoThread& video_thread) {
+  cv::Mat frame;
+  for(;;){
+    frame = video_thread.GetFrame();
+    imshow("SimpleThread", frame);
+    if(waitKey(1) >= 0) break;
+  }
+}
 
-int main(int argc, char* argv[]) {
-    if (argc != 3) {
-        fprintf(stderr, "minimal <tflite model> <labels file>\n");
-        return 1;
-    }
-    const char* model_file = argv[1];
-    const char* labels_file = argv[2];
-
-    // Initialize variables
-    VideoCapture cap;
-    Mat image;
-
-    // Load class names
+int InferenceThread(VideoThread& video_thread, char* model_file, char* labels_file) {
+  cv::Mat image;
+  
+  // Load class names
     vector<string> class_names;
     ifstream labels(labels_file);
     string line;
@@ -67,13 +67,6 @@ int main(int argc, char* argv[]) {
     // Get the input and output tensors
     int input = interpreter->inputs()[0];
 
-    
-    cap.open(CAM_ID, CAM_API_ID);
-    if(!cap.isOpened()){
-        cerr << "ERROR! Unable to open camera\n";
-        return -1;
-    }
-
     cout << "Start grabbing" << endl;
     namedWindow("Image", 0);
     resizeWindow("Image", 500,500);
@@ -92,7 +85,7 @@ int main(int argc, char* argv[]) {
 
     for (;;){
         start = getTickCount();
-        cap.read(image);
+        image = video_thread.GetFrame().clone();
         if(image.empty()){
             cerr << "ERROR! blank frame grabbed\n";
             return 1;
@@ -135,7 +128,6 @@ int main(int argc, char* argv[]) {
         //     cerr << "Failed to get the number of detections." << endl;
         //     return -1;
         // }
-
         // Draw the bounding boxes on the image
         n_det = 0;
         for (int i = 0; i < *num_detections; i++) {
@@ -161,6 +153,30 @@ int main(int argc, char* argv[]) {
         if(waitKey(1) >= 0)
             break;
     }
+    return 0;
+}
 
+
+int main(int argc, char* argv[]) {
+    if (argc != 3) {
+        fprintf(stderr, "minimal <tflite model> <labels file>\n");
+        return 1;
+    }
+    const char* model_file = argv[1];
+    const char* labels_file = argv[2];
+
+    // Initialize variables
+    VideoThread video_thread;
+    video_thread.Start();
+    Mat image;
+
+
+    std::thread worker_thread1(&SimpleThread, std::ref(video_thread));
+    std::thread worker_thread2(&InferenceThread, std::ref(video_thread), argv[1], argv[2]);
+
+    worker_thread1.join();
+    worker_thread2.join();
+
+    video_thread.Stop();
     return 0;
 }

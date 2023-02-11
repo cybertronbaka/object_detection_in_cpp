@@ -12,11 +12,13 @@ INCLUDE_DIRECTORIES(
 # lib has 1 file: libtensorflowlite.so
 ADD_LIBRARY(tensorflowlite SHARED IMPORTED)
 set_property(TARGET tensorflowlite PROPERTY IMPORTED_LOCATION /usr/local/lib/libtensorflowlite.so)
+set_property(TARGET  PROPERTY IMPORTED_LOCATION /usr/lib32/libpthread.so.0)
 
 add_executable(obj_detection main.cpp)
 target_link_libraries(
     obj_detection 
     tensorflowlite
+    pthread
     opencv_core
     opencv_videoio
     opencv_highgui
