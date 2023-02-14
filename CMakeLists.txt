@@ -5,12 +5,12 @@ set(CMAKE_CXX_STANDARD 17)
 
 # include has 2 subdirectories: tensorflow and flatbuffers
 INCLUDE_DIRECTORIES(
-    "./tflite-dist/include"
+    "../tflite-dist/include/"
 )
 
 # lib has 1 file: libtensorflowlite.so
 ADD_LIBRARY(tensorflowlite SHARED IMPORTED)
-set_property(TARGET tensorflowlite PROPERTY IMPORTED_LOCATION /tflite-dist/lib/libtensorflowlite.so)
+set_property(TARGET tensorflowlite PROPERTY IMPORTED_LOCATION ../tflite-dist/lib/libtensorflowlite.so)
 
 add_executable(obj_detection main.cpp)
 target_link_libraries(
