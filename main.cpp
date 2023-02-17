@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
         cerr << "Failed to build interpreter" << endl;
         return 1;
     }
-
+    interpreter->SetNumThreads(2);
     // Allocate tensor buffers
     if (interpreter->AllocateTensors() != kTfLiteOk) {
         cerr << "Failed to allocate tensors" << endl;

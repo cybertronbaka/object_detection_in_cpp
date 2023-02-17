@@ -3,6 +3,9 @@ project(obj_detection)
 
 set(CMAKE_CXX_STANDARD 17)
 
+# set the optimization level to 3
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+
 # include has 2 subdirectories: tensorflow and flatbuffers
 INCLUDE_DIRECTORIES(
     /usr/local/include/
