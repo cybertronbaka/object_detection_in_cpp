@@ -1,8 +1,0 @@
-rcsD
-bazel-out/aarch64-opt/bin/external/flatbuffers/src/libflatbuffers.pic.a
-bazel-out/aarch64-opt/bin/external/flatbuffers/src/_objs/flatbuffers/code_generators.pic.o
-bazel-out/aarch64-opt/bin/external/flatbuffers/src/_objs/flatbuffers/idl_gen_fbs.pic.o
-bazel-out/aarch64-opt/bin/external/flatbuffers/src/_objs/flatbuffers/idl_gen_text.pic.o
-bazel-out/aarch64-opt/bin/external/flatbuffers/src/_objs/flatbuffers/idl_parser.pic.o
-bazel-out/aarch64-opt/bin/external/flatbuffers/src/_objs/flatbuffers/reflection.pic.o
-bazel-out/aarch64-opt/bin/external/flatbuffers/src/_objs/flatbuffers/util.pic.o

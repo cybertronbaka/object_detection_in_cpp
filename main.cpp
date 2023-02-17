@@ -1,18 +1,22 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <optional>
+#include <signal.h>
 
-#include "opencv2/core.hpp"
-#include "opencv2/videoio.hpp"
-#include "opencv2/highgui.hpp"
-#include "opencv2/imgproc.hpp"
 
-#include "tensorflow/lite/interpreter.h"
-#include "tensorflow/lite/kernels/register.h"
-#include "tensorflow/lite/model.h"
+#include <opencv2/core.hpp>
+#include <opencv2/videoio.hpp>
+//#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+
+#include <tensorflow/lite/interpreter.h>
+#include <tensorflow/lite/kernels/register.h>
+#include <tensorflow/lite/model.h>
 
 using namespace cv;
 using namespace std;
+using namespace tflite;
 
 #define CAM_ID 0
 #define CAM_API_ID CAP_ANY
@@ -20,6 +24,24 @@ using namespace std;
 #define RED Scalar(0, 0, 255)
 #define LABEL_TEXT_POS Point(10, 20)
 
+
+bool camInitiated = false;
+VideoCapture cap;
+
+void my_handler(int signum){
+    if(!camInitiated) {
+	return;
+    }
+    if(!cap.isOpened()){
+	return;
+    } else {
+	camInitiated = false;
+	cap.release();
+	cout << "VideoCapture Released" << endl;
+    }
+
+    cout << "Quiting program..." << endl;
+}
 
 int main(int argc, char* argv[]) {
     if (argc != 3) {
@@ -30,9 +52,8 @@ int main(int argc, char* argv[]) {
     const char* labels_file = argv[2];
 
     // Initialize variables
-    VideoCapture cap;
+   // VideoCapture cap;
     Mat image;
-
     // Load class names
     vector<string> class_names;
     ifstream labels(labels_file);
@@ -42,17 +63,17 @@ int main(int argc, char* argv[]) {
     }
 
     // Load the TFLite model from file
-    unique_ptr<tflite::FlatBufferModel> model =
-        tflite::FlatBufferModel::BuildFromFile(model_file);
+    unique_ptr<FlatBufferModel> model =
+        FlatBufferModel::BuildFromFile(model_file);
     if (!model) {
         cerr << "Failed to load model" << endl;
         return 1;
     }
 
     // Build the TFLite interpreter
-    tflite::ops::builtin::BuiltinOpResolver resolver;
-    unique_ptr<tflite::Interpreter> interpreter;
-    tflite::InterpreterBuilder(*model, resolver)(&interpreter);
+    ops::builtin::BuiltinOpResolver resolver;
+    unique_ptr<Interpreter> interpreter;
+    InterpreterBuilder(*model, resolver)(&interpreter);
     if (!interpreter) {
         cerr << "Failed to build interpreter" << endl;
         return 1;
@@ -67,16 +88,15 @@ int main(int argc, char* argv[]) {
     // Get the input and output tensors
     int input = interpreter->inputs()[0];
 
-    
     cap.open(CAM_ID, CAM_API_ID);
     if(!cap.isOpened()){
         cerr << "ERROR! Unable to open camera\n";
         return -1;
     }
-
+    camInitiated = true;
     cout << "Start grabbing" << endl;
-    namedWindow("Image", 0);
-    resizeWindow("Image", 500,500);
+    //namedWindow("Image", 0);
+    //resizeWindow("Image", 500,500);
 
 
     Mat resized;
@@ -90,7 +110,12 @@ int main(int argc, char* argv[]) {
 
     int64 start;
 
+    signal (SIGINT,my_handler);
+
     for (;;){
+	if(!camInitiated){
+	    break;
+	}
         start = getTickCount();
         cap.read(image);
         if(image.empty()){
@@ -152,14 +177,16 @@ int main(int argc, char* argv[]) {
             float xmax = boxes[i * 4 + 3] * image.cols;
 
             rectangle(image, Rect(xmin, ymin, xmax - xmin, ymax - ymin), RED, 2);
+	    cout << "DETECTED: " << class_names[class_id] << endl;
             putText(image, class_names[class_id], Point(xmin, ymin - 10), FONT_HERSHEY_SIMPLEX, 0.5,RED, 2);
             n_det++;
         }
         double fps = getTickFrequency() / (getTickCount() - start);
         putText(image, "FPS: " + to_string(fps), LABEL_TEXT_POS, FONT_HERSHEY_SIMPLEX, 0.5, RED, 2);
-        imshow("Image", image);
-        if(waitKey(1) >= 0)
-            break;
+	cout << "FPS: " + to_string(fps) << endl;
+        //imshow("Image", image);
+        //if(waitKey(1) >= 0)
+        //    break;
     }
 
     return 0;
